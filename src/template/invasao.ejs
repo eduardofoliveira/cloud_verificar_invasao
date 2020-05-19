@@ -1,0 +1,48 @@
+<div style="background-color: cornflowerblue; border-radius: 10px; height: 100%;">
+  <h1 style="font-family: monospace; text-align: center; color: cornsilk;">Aviso de Invasão</h1>
+
+  <% if(excederamQuantidade.length > 0) { %>
+  <div>
+    <h3 style="text-align: center">Quantidade de chamadas excessivas</h3>
+    <table style="margin: 0 auto;">
+      <thead>
+        <tr>
+          <th>DID</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% excederamQuantidade.map(originador => { %>
+        <tr align="center">
+          <td><%= originador.callerid %></td>
+          <td><%= originador.quantity %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <% if(excederamValor.length > 0) { %>
+  <div>
+    <h3 style="text-align: center">Custo das chamadas acima do limite</h3>
+    <table style="margin: 0 auto;">
+      <thead>
+        <tr>
+          <th>DID</th>
+          <th>Custo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% excederamValor.map(originador => { %>
+        <tr align="center">
+          <td><%= originador.callerid %></td>
+          <td><%= originador.cost %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+</div>
