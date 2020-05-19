@@ -21,6 +21,9 @@ class VerifyCostLastHourService {
     const costLastHourByDid = await getConnection().query(`
       SELECT
         callerid,
+        callednum,
+        c.notes AS destination,
+        replace(replace(c.pattern, '^', ''), '.*', '') AS pattern,
         SUM(debit) AS debit,
         SUM(cost) AS cost,
         COUNT(*) AS quantity
@@ -30,10 +33,13 @@ class VerifyCostLastHourService {
         c.callednum LIKE '010%' and
         c.callstart BETWEEN NOW() + INTERVAL 2 HOUR and NOW() + INTERVAL 3 HOUR
       GROUP BY
-        callerid
+        callerid, callednum
+      ORDER BY
+        debit
+      desc;
     `);
 
-    verifyLimitsService.execute(costLastHourByDid);
+    verifyLimitsService.execute(costLastHourByDid, costLastHour);
 
     const retorno = {
       ...costLastHour,

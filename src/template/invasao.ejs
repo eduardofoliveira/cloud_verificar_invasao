@@ -8,6 +8,9 @@
       <thead>
         <tr>
           <th>DID</th>
+          <th>Domain</th>
+          <th>Destination</th>
+          <th>Pattern</th>
           <th>Quantidade</th>
         </tr>
       </thead>
@@ -15,6 +18,9 @@
         <% excederamQuantidade.map(originador => { %>
         <tr align="center">
           <td><%= originador.callerid %></td>
+          <td style="color: white; text-decoration: none;"><%= originador.domain.replace(/\./g, ',') %></td>
+          <td><%= originador.destination %></td>
+          <td><%= originador.pattern %></td>
           <td><%= originador.quantity %></td>
         </tr>
         <% }) %>
@@ -30,6 +36,9 @@
       <thead>
         <tr>
           <th>DID</th>
+          <th>Domain</th>
+          <th>Destination</th>
+          <th>Pattern</th>
           <th>Custo</th>
         </tr>
       </thead>
@@ -37,7 +46,10 @@
         <% excederamValor.map(originador => { %>
         <tr align="center">
           <td><%= originador.callerid %></td>
-          <td><%= originador.cost %></td>
+          <td style="color: white; text-decoration: none;"><%= originador.domain.replace(/\./g, ',') %></td>
+          <td><%= originador.destination %></td>
+          <td><%= originador.pattern %></td>
+          <td><%= originador.debit %></td>
         </tr>
         <% }) %>
       </tbody>

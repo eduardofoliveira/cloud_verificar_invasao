@@ -13,7 +13,7 @@ class SendMailService {
 
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: 'suporte@cloudcom.com.br',
+      to: 'suporte.basix@cloudcom.com.br',
       subject: 'Alerta de invasão - Cloudcom',
       html,
     };

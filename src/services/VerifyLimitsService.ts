@@ -1,21 +1,33 @@
 import { getRepository } from 'typeorm';
+import axios from 'axios';
 
 import BasixSupportTable from '../models/BasixSupportTable';
 import SendMailService from './SendMailService';
 import GenerateHtmlTemplateService from './GenerateHtmlTemplateService';
+import BlockInternacionalTrunkService from './BlockInternacionalTrunkService';
 // import SendSmsService from './SendSmsService';
 
-interface Request {
+interface CostLastHour {
+  totalCostLastHour: string;
+  totalDebitLastHour: string;
+}
+
+interface CostLastHourByDid {
   callerid: string;
+  domain: string;
   debit: string;
   cost: string;
   quantity: string;
 }
 
 class VerifyLimitsService {
-  public async execute(costLastHourByDid: Request[]): Promise<void> {
+  public async execute(
+    costLastHourByDid: CostLastHourByDid[],
+    costLastHour: CostLastHour,
+  ): Promise<void> {
     const supportTableRepository = getRepository(BasixSupportTable);
     const sendMailService = new SendMailService();
+    const blockInternacionalTrunkService = new BlockInternacionalTrunkService();
     // const sendSmsService = new SendSmsService();
     const generateHtmlTemplateService = new GenerateHtmlTemplateService();
 
@@ -25,6 +37,10 @@ class VerifyLimitsService {
 
     const maxValueLimitPerHour = await supportTableRepository.findOne({
       where: { name: 'max_value_internacional_per_hour' },
+    });
+
+    const maxValueTrunkPerHour = await supportTableRepository.findOne({
+      where: { name: 'max_value_trunk_internacional_per_hour' },
     });
 
     const costLastHourByDidFiltred = costLastHourByDid.map(item => {
@@ -37,6 +53,33 @@ class VerifyLimitsService {
 
       return item;
     });
+
+    // eslint-disable-next-line no-plusplus
+    for (let i = 0; i < costLastHourByDidFiltred.length; i++) {
+      const element = costLastHourByDidFiltred[i];
+
+      // eslint-disable-next-line no-await-in-loop
+      const { data } = await axios.get(
+        `http://35.171.122.245:85/api/basix/domain/${element.callerid}`,
+      );
+
+      costLastHourByDidFiltred[i].domain = data.domain;
+    }
+
+    if (maxValueTrunkPerHour) {
+      if (
+        parseFloat(costLastHour.totalDebitLastHour) >
+        parseFloat(maxValueTrunkPerHour.value)
+      ) {
+        blockInternacionalTrunkService.execute();
+        sendMailService.execute(
+          generateHtmlTemplateService.execute('bloqueio-geral', {
+            excederamValor: [],
+            excederamQuantidade: [],
+          }),
+        );
+      }
+    }
 
     if (maxCallLimitPerHour && maxValueLimitPerHour) {
       const excederamQuantidade = costLastHourByDidFiltred.filter(
@@ -58,6 +101,22 @@ class VerifyLimitsService {
             excederamQuantidade,
           }),
         );
+
+        excederamQuantidade.map(originador => {
+          axios.post(`http://35.171.122.245:85/api/alterar`, {
+            acao: 2,
+            lista: [originador.callerid],
+          });
+          return originador;
+        });
+
+        excederamValor.map(originador => {
+          axios.post(`http://35.171.122.245:85/api/alterar`, {
+            acao: 2,
+            lista: [originador.callerid],
+          });
+          return originador;
+        });
 
         // const smsMessageValor = excederamValor.reduce((message, originador) => {
         //   // eslint-disable-next-line no-param-reassign
