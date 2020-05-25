@@ -2,6 +2,7 @@ import { getRepository } from 'typeorm';
 import axios from 'axios';
 
 import BasixSupportTable from '../models/BasixSupportTable';
+import BasixBlockIgnorePattern from '../models/BasixBlockIgnorePattern';
 import SendMailService from './SendMailService';
 import GenerateHtmlTemplateService from './GenerateHtmlTemplateService';
 import BlockInternacionalTrunkService from './BlockInternacionalTrunkService';
@@ -14,6 +15,7 @@ interface CostLastHour {
 
 interface CostLastHourByDid {
   callerid: string;
+  callednum: string;
   domain: string;
   debit: string;
   cost: string;
@@ -26,6 +28,10 @@ class VerifyLimitsService {
     costLastHour: CostLastHour,
   ): Promise<void> {
     const supportTableRepository = getRepository(BasixSupportTable);
+    const basixBlockIgnorePatternRepository = getRepository(
+      BasixBlockIgnorePattern,
+    );
+
     const sendMailService = new SendMailService();
     const blockInternacionalTrunkService = new BlockInternacionalTrunkService();
     // const sendSmsService = new SendSmsService();
@@ -43,7 +49,7 @@ class VerifyLimitsService {
       where: { name: 'max_value_trunk_internacional_per_hour' },
     });
 
-    const costLastHourByDidFiltred = costLastHourByDid.map(item => {
+    let costLastHourByDidFiltred = costLastHourByDid.map(item => {
       const number = item.callerid.match(/<(.*)>/);
       if (number) {
         const [, did] = number;
@@ -52,6 +58,22 @@ class VerifyLimitsService {
       }
 
       return item;
+    });
+
+    const ignoreNumbers = await basixBlockIgnorePatternRepository.find();
+
+    // Retira as chamadas que estão no 'BasixBlockIgnorePattern'
+    costLastHourByDidFiltred = costLastHourByDidFiltred.filter(item => {
+      if (
+        ignoreNumbers.find(
+          number =>
+            number.callerid === item.callerid &&
+            number.callednum === item.callednum,
+        )
+      ) {
+        return false;
+      }
+      return true;
     });
 
     // eslint-disable-next-line no-plusplus
